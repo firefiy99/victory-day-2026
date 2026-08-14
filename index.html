@@ -518,9 +518,6 @@
 <button class="back-top" id="backTop" aria-label="返回顶部">↑</button>
 
 <button class="music-btn" id="musicBtn" aria-label="播放背景音乐" title="播放背景音乐">🎵</button>
-<audio id="bgm" loop preload="none">
-  <source src="assets/music.mp3" type="audio/mpeg">
-</audio>
 
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
@@ -826,25 +823,143 @@ function launchFireworks() {
   }, 1000);
 })();
 
-/* ===== 背景音乐控制 ===== */
+/* ===== 背景音乐：原创中国风编钟配乐（Web Audio 合成，无版权） ===== */
 (function () {
   var btn = document.getElementById('musicBtn');
-  var bgm = document.getElementById('bgm');
-  if (!btn || !bgm) return;
-  btn.addEventListener('click', function () {
-    if (bgm.paused) {
-      bgm.volume = 0.8;
-      bgm.play().then(function () {
-        btn.classList.add('playing');
-        btn.textContent = '🎶';
-        btn.title = '暂停背景音乐';
-      }).catch(function () {});
-    } else {
-      bgm.pause();
-      btn.classList.remove('playing');
-      btn.textContent = '🎵';
-      btn.title = '播放背景音乐';
+  if (!btn) return;
+
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null;
+  var timer = null;
+  var nextBeat = 0;
+  var beatIdx = 0;
+  var playing = false;
+
+  // D 宫五声音阶（D E F# A B），庄重舒缓，66 BPM
+  var BEAT = 60 / 66; // 每拍秒数
+  var LOOP = 32;      // 8 小节 × 4 拍
+
+  // 旋律（钟琴）：[频率, 持续拍数, 音量]
+  var MELODY = {
+    0: [587.33, 2, 0.50],   // D5
+    2: [659.25, 1, 0.42],   // E5
+    3: [739.99, 1, 0.40],   // F#5
+    4: [659.25, 2, 0.45],
+    6: [587.33, 1, 0.40],
+    7: [493.88, 1, 0.38],   // B4
+    8: [440.00, 2, 0.40],   // A4
+    10: [493.88, 1, 0.40],
+    11: [587.33, 1, 0.42],
+    12: [739.99, 2, 0.42],
+    14: [659.25, 1, 0.40],
+    15: [587.33, 1, 0.38],
+    16: [493.88, 2, 0.40],
+    18: [440.00, 1, 0.38],
+    19: [369.99, 1, 0.36],  // F#4
+    20: [440.00, 2, 0.40],
+    22: [493.88, 1, 0.38],
+    23: [440.00, 1, 0.36],
+    24: [369.99, 2, 0.38],
+    26: [440.00, 1, 0.36],
+    27: [493.88, 1, 0.38],
+    28: [587.33, 2, 0.42],
+    30: [440.00, 1, 0.36],
+    31: [369.99, 1, 0.34]
+  };
+  // 低音铺底：[频率, 持续拍数, 音量]
+  var BASS = {
+    0: [146.83, 2, 0.34],   // D3
+    2: [146.83, 2, 0.28],
+    4: [123.47, 2, 0.34],   // B2
+    6: [123.47, 2, 0.28],
+    8: [185.00, 2, 0.34],   // F#3
+    10: [185.00, 2, 0.28],
+    12: [146.83, 2, 0.34],
+    14: [146.83, 2, 0.28],
+    16: [110.00, 2, 0.34],  // A2
+    18: [110.00, 2, 0.28],
+    20: [164.81, 2, 0.34],  // E3
+    22: [164.81, 2, 0.28],
+    24: [146.83, 2, 0.34],
+    26: [146.83, 2, 0.28],
+    28: [146.83, 2, 0.40],
+    30: [146.83, 2, 0.28]
+  };
+  // 小节首拍的高远钟声：[频率, 持续拍数, 音量]
+  var BELL = {
+    0: [1174.66, 0.6, 0.13], // D6
+    4: [987.77, 0.5, 0.11],  // B5
+    8: [880.00, 0.5, 0.11],  // A5
+    12: [739.99, 0.5, 0.11],
+    16: [880.00, 0.5, 0.11],
+    20: [987.77, 0.5, 0.11],
+    24: [880.00, 0.5, 0.11],
+    28: [1174.66, 0.6, 0.13]
+  };
+
+  function tone(freq, t, dur, vol, type) {
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.1);
+  }
+
+  // 编钟音色：基音 + 2 倍泛音 + 3 倍泛音，柔和衰减
+  function bell(freq, t, dur, vol) {
+    tone(freq, t, dur, vol, 'sine');
+    tone(freq * 2.0, t, dur * 0.55, vol * 0.32, 'sine');
+    tone(freq * 3.01, t, dur * 0.3, vol * 0.13, 'sine');
+    tone(freq, t, dur, vol * 0.9, 'triangle');
+  }
+
+  function schedule() {
+    while (nextBeat < ctx.currentTime + 0.8) {
+      var b = beatIdx % LOOP;
+      var t = nextBeat;
+      var m = MELODY[b];
+      if (m) bell(m[0], t, m[1] * BEAT, m[2]);
+      var bs = BASS[b];
+      if (bs) tone(bs[0], t, bs[1] * BEAT * 0.95, bs[2], 'sine');
+      var bl = BELL[b];
+      if (bl) bell(bl[0], t, bl[1] * BEAT, bl[2]);
+      nextBeat += BEAT;
+      beatIdx++;
     }
+  }
+
+  function start() {
+    if (!ctx) {
+      ctx = new AC();
+      nextBeat = ctx.currentTime + 0.15;
+      beatIdx = 0;
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    playing = true;
+    schedule();
+    timer = setInterval(schedule, 120);
+    btn.classList.add('playing');
+    btn.textContent = '🎶';
+    btn.title = '暂停背景音乐';
+  }
+
+  function stop() {
+    playing = false;
+    if (timer) { clearInterval(timer); timer = null; }
+    if (ctx && ctx.state === 'running') ctx.suspend();
+    btn.classList.remove('playing');
+    btn.textContent = '🎵';
+    btn.title = '播放背景音乐';
+  }
+
+  btn.addEventListener('click', function () {
+    if (playing) { stop(); } else { start(); }
   });
 })();
 </script>
