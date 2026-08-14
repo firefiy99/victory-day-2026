@@ -522,58 +522,177 @@ var io = new IntersectionObserver(function (entries) {
 }, { threshold: 0.18 });
 document.querySelectorAll('.tl-item, .card').forEach(function (el) { io.observe(el); });
 
-/* ===== 烟花 ===== */
+/* ===== 烟花（升级版：火箭升空 + 拖尾爆炸 + 子爆） ===== */
 var cv = document.getElementById('fireworks');
 var ctx = cv.getContext('2d');
 var parts = [];
+var rockets = [];
 function sizeCanvas() { cv.width = innerWidth; cv.height = innerHeight; }
 sizeCanvas();
 addEventListener('resize', sizeCanvas);
 
-function burst(x, y, color) {
-  var n = 90;
+var PALETTE = ['#f5d76e', '#fff3c4', '#e0384e', '#ff8c42', '#ffd9e8', '#7ec8e3', '#d4af37'];
+function rand(a, b) { return a + Math.random() * (b - a); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function makeParticle(x, y, vx, vy, color, size, life, decay, shape) {
+  return {
+    x: x, y: y, vx: vx, vy: vy,
+    color: color, size: size, life: life, decay: decay,
+    shape: shape || (Math.random() < 0.18 ? 'star' : 'dot'),
+    trail: [], child: false, childT: 0
+  };
+}
+
+function miniBurst(x, y, color) {
+  var n = 12 + Math.floor(Math.random() * 6);
   for (var i = 0; i < n; i++) {
-    var a = (Math.PI * 2 * i) / n + Math.random() * 0.3;
-    var sp = 2 + Math.random() * 5;
-    parts.push({
-      x: x, y: y,
-      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-      life: 1,
-      decay: 0.008 + Math.random() * 0.012,
-      color: color,
-      size: 1.5 + Math.random() * 2.2
-    });
+    var a = Math.random() * Math.PI * 2;
+    var sp = rand(0.8, 3);
+    parts.push(makeParticle(x, y, Math.cos(a) * sp, Math.sin(a) * sp, color, rand(1, 2.2), rand(0.5, 0.9), rand(0.02, 0.04)));
   }
 }
-function launchFireworks() {
-  var colors = ['#f5d76e', '#e0384e', '#ff8c42', '#fff3c4', '#ffd9e8'];
-  var times = [0, 350, 700, 1100, 1500];
-  times.forEach(function (t, idx) {
+
+function explode(x, y, color, scale) {
+  var n = Math.floor(rand(55, 85) * (scale || 1));
+  for (var i = 0; i < n; i++) {
+    var a = Math.random() * Math.PI * 2;
+    var sp = rand(1.2, 6.5) * (scale || 1);
+    var p = makeParticle(
+      x, y,
+      Math.cos(a) * sp, Math.sin(a) * sp,
+      Math.random() < 0.5 ? color : pick(PALETTE),
+      rand(1.5, 3.5), rand(0.9, 1.3), rand(0.008, 0.014)
+    );
+    if (Math.random() < 0.09) { p.child = true; p.childT = rand(12, 26); }
+    parts.push(p);
+  }
+}
+
+function flash(x, y, color) {
+  parts.push(makeParticle(x, y, 0, 0, '#ffffff', 15, 1, 0.02, 'glow'));
+  parts.push(makeParticle(x, y, 0, 0, color, 9, 1, 0.028, 'glow'));
+}
+
+function burst(x, y, color) {
+  flash(x, y, color);
+  explode(x, y, color, 1);
+  if (Math.random() < 0.4) {
     setTimeout(function () {
-      burst(
-        cv.width * (0.25 + Math.random() * 0.5),
-        cv.height * (0.2 + Math.random() * 0.35),
-        colors[idx % colors.length]
-      );
-    }, t);
+      explode(x + rand(-45, 45), y + rand(-45, 45), pick(PALETTE), 0.65);
+    }, rand(120, 280));
+  }
+}
+
+function launchRocket() {
+  var fromX = rand(cv.width * 0.15, cv.width * 0.85);
+  rockets.push({
+    x: fromX, y: cv.height + 12,
+    vx: 0, vy: 0,
+    targetX: fromX + rand(-cv.width * 0.2, cv.width * 0.2),
+    targetY: rand(cv.height * 0.12, cv.height * 0.45),
+    color: pick(PALETTE)
   });
 }
-(function animate() {
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  parts = parts.filter(function (p) { return p.life > 0; });
-  parts.forEach(function (p) {
-    p.x += p.vx; p.y += p.vy;
-    p.vy += 0.045;
+
+function update() {
+  // 火箭升空
+  for (var i = rockets.length - 1; i >= 0; i--) {
+    var r = rockets[i];
+    var dx = r.targetX - r.x, dy = r.targetY - r.y;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 8) {
+      burst(r.x, r.y, r.color);
+      rockets.splice(i, 1);
+      continue;
+    }
+    var sp = Math.min(d * 0.09, 12);
+    r.vx += (dx / d) * sp * 0.12;
+    r.vy += (dy / d) * sp * 0.12;
+    r.vx *= 0.94; r.vy *= 0.94;
+    r.x += r.vx; r.y += r.vy;
+    // 尾焰
+    parts.push(makeParticle(r.x, r.y, rand(-0.5, 0.5), rand(1.6, 3.4), r.color, rand(1.5, 3), rand(0.4, 0.8), rand(0.04, 0.08), 'dot'));
+  }
+  // 粒子
+  for (var j = parts.length - 1; j >= 0; j--) {
+    var p = parts[j];
     p.vx *= 0.985;
+    p.vy += 0.05;
     p.life -= p.decay;
-    ctx.globalAlpha = Math.max(p.life, 0);
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-    ctx.fill();
-  });
+    p.x += p.vx; p.y += p.vy;
+    p.trail.push({ x: p.x, y: p.y });
+    if (p.trail.length > 7) p.trail.shift();
+    if (p.child) {
+      p.childT--;
+      if (p.childT <= 0) { miniBurst(p.x, p.y, p.color); p.child = false; }
+    }
+    if (p.life <= 0) parts.splice(j, 1);
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  var now = Date.now();
+  // 拖尾
+  for (var t = 0; t < parts.length; t++) {
+    var p = parts[t];
+    var tr = p.trail;
+    for (var k = 0; k < tr.length; k++) {
+      var tt = tr[k];
+      var f = (k + 1) / tr.length;
+      ctx.globalAlpha = Math.max(f * p.life, 0) * 0.55;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(tt.x, tt.y, p.size * f * 0.85 + 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // 粒子本体 + 光晕
+  for (var i = 0; i < parts.length; i++) {
+    var q = parts[i];
+    var tw = 0.72 + 0.28 * Math.sin(now * 0.018 + q.x * 0.05);
+    ctx.globalAlpha = Math.max(q.life, 0) * tw;
+    ctx.fillStyle = q.color;
+    if (q.shape === 'star') {
+      ctx.save();
+      ctx.translate(q.x, q.y);
+      ctx.rotate(q.life * 6);
+      ctx.beginPath();
+      for (var s = 0; s < 5; s++) {
+        var a1 = -Math.PI / 2 + s * Math.PI * 2 / 5;
+        var a2 = a1 + Math.PI / 5;
+        ctx.lineTo(Math.cos(a1) * q.size * 2.1, Math.sin(a1) * q.size * 2.1);
+        ctx.lineTo(Math.cos(a2) * q.size, Math.sin(a2) * q.size);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    } else if (q.shape === 'glow') {
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.size * (0.6 + 0.4 * q.life), 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.size, 0, Math.PI * 2); ctx.fill();
+    }
+    if (q.shape !== 'glow') {
+      ctx.globalAlpha = Math.max(q.life, 0) * 0.16;
+      ctx.beginPath(); ctx.arc(q.x, q.y, q.size * 3.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   ctx.globalAlpha = 1;
-  requestAnimationFrame(animate);
+}
+
+function launchFireworks() {
+  var n = 5 + Math.floor(Math.random() * 3);
+  for (var i = 0; i < n; i++) {
+    setTimeout(launchRocket, i * 260);
+  }
+  setTimeout(launchRocket, n * 260 + 320);
+}
+
+(function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
 })();
 
 /* ===== 足迹：实时访客 + 本地记录 ===== */
