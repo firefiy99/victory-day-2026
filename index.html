@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8·15 日本无条件投降纪念日 · 抗战胜利 81 周年</title>
+<style>
+  :root {
+    --red-deep: #7a1220;
+    --red: #c8102e;
+    --red-bright: #e0384e;
+    --gold: #f5d76e;
+    --gold-deep: #d4af37;
+    --cream: #fff8e7;
+    --ink: #2b1a1a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* ===== 顶部缎带 ===== */
+  .ribbon {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: 6px;
+    background: repeating-linear-gradient(90deg,
+      var(--red) 0 60px, var(--gold-deep) 60px 72px);
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  }
+
+  /* ===== Hero ===== */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at 50% 120%, rgba(245,215,110,.22), transparent 60%),
+      linear-gradient(160deg, #8c1f28 0%, var(--red-deep) 45%, #5c0e18 100%);
+    color: var(--cream);
+    padding: 80px 20px 60px;
+    overflow: hidden;
+  }
+  .hero::before, .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+  }
+  .hero::before {
+    background-image:
+      radial-gradient(rgba(245,215,110,.14) 1px, transparent 1.5px);
+    background-size: 28px 28px;
+    opacity: .5;
+  }
+  .hero::after {
+    background:
+      linear-gradient(115deg, transparent 48%, rgba(245,215,110,.06) 49%, rgba(245,215,110,.06) 51%, transparent 52%),
+      linear-gradient(65deg, transparent 48%, rgba(245,215,110,.05) 49%, rgba(245,215,110,.05) 51%, transparent 52%);
+    background-size: 320px 320px;
+  }
+  .stars { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .star {
+    position: absolute;
+    top: -10%;
+    color: var(--gold);
+    animation: fall linear infinite;
+    opacity: 0;
+    text-shadow: 0 0 8px rgba(245,215,110,.8);
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-5vh) rotate(0deg);  opacity: 0; }
+    10%  { opacity: .85; }
+    90%  { opacity: .6; }
+    100% { transform: translateY(108vh) rotate(360deg); opacity: 0; }
+  }
+  .badge {
+    position: relative; z-index: 2;
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 10px 22px;
+    border: 1px solid rgba(245,215,110,.65);
+    border-radius: 999px;
+    font-size: 15px; letter-spacing: 4px;
+    color: var(--gold);
+    background: rgba(0,0,0,.22);
+    backdrop-filter: blur(4px);
+    margin-bottom: 30px;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: .55; } }
+
+  .hero h1 {
+    position: relative; z-index: 2;
+    font-family: "STKaiti", "KaiTi", "FangSong", serif;
+    font-size: clamp(44px, 9vw, 96px);
+    font-weight: 700;
+    letter-spacing: 8px;
+    line-height: 1.15;
+    text-shadow: 0 4px 24px rgba(0,0,0,.45);
+  }
+  .hero h1 .date {
+    display: block;
+    font-size: .52em;
+    letter-spacing: 10px;
+    color: var(--gold);
+    margin-top: 10px;
+  }
+  .hero .sub {
+    position: relative; z-index: 2;
+    margin-top: 26px;
+    font-size: clamp(15px, 2.6vw, 21px);
+    letter-spacing: 6px;
+    color: rgba(255,248,231,.92);
+  }
+  .hero .year {
+    position: relative; z-index: 2;
+    margin-top: 14px;
+    font-family: "STKaiti", "KaiTi", serif;
+    font-size: clamp(18px, 3vw, 26px);
+    color: var(--gold);
+    letter-spacing: 3px;
+  }
+  .hero .cta {
+    position: relative; z-index: 2;
+    margin-top: 46px;
+    padding: 15px 42px;
+    border: 1.5px solid var(--gold);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(245,215,110,.18), rgba(245,215,110,.05));
+    color: var(--gold);
+    font-size: 17px; letter-spacing: 5px;
+    cursor: pointer;
+    transition: all .3s ease;
+  }
+  .hero .cta:hover { background: var(--gold); color: var(--red-deep); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(245,215,110,.35); }
+  .scroll-hint {
+    position: absolute; z-index: 2; bottom: 26px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,248,231,.75); font-size: 13px; letter-spacing: 3px;
+    animation: bob 2s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,8px); } }
+
+  /* ===== 内容区 ===== */
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 70px 22px; }
+  .section-title {
+    text-align: center;
+    font-family: "STKaiti", "KaiTi", serif;
+    font-size: clamp(26px, 4.5vw, 40px);
+    letter-spacing: 6px;
+    color: var(--red-deep);
+    margin-bottom: 8px;
+  }
+  .section-sub { text-align: center; color: #8a6d3b; letter-spacing: 3px; font-size: 14px; margin-bottom: 46px; }
+
+  /* 时间线 */
+  .timeline { position: relative; padding: 10px 0; }
+  .timeline::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 2px; transform: translateX(-50%);
+    background: linear-gradient(180deg, transparent, var(--red) 8%, var(--red) 92%, transparent);
+  }
+  .tl-item {
+    position: relative; width: 50%; padding: 18px 40px 18px 0;
+    opacity: 0; transform: translateY(30px);
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  .tl-item.visible { opacity: 1; transform: translateY(0); }
+  .tl-item:nth-child(even) { left: 50%; padding: 18px 0 18px 40px; }
+  .tl-dot {
+    position: absolute; top: 26px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--gold); border: 3px solid var(--red);
+    box-shadow: 0 0 0 4px rgba(200,16,46,.15);
+  }
+  .tl-item:nth-child(odd) .tl-dot { right: -8px; }
+  .tl-item:nth-child(even) .tl-dot { left: -8px; }
+  .tl-card {
+    background: #fff;
+    border: 1px solid #ecd9a8;
+    border-left: 4px solid var(--red);
+    border-radius: 10px;
+    padding: 18px 22px;
+    box-shadow: 0 6px 18px rgba(122,18,32,.08);
+    transition: transform .3s ease, box-shadow .3s ease;
+  }
+  .tl-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(122,18,32,.16); }
+  .tl-year { font-size: 13px; letter-spacing: 2px; color: var(--red); font-weight: 600; }
+  .tl-title { font-size: 18px; font-weight: 700; margin: 6px 0 8px; color: var(--ink); }
+  .tl-desc { font-size: 14px; line-height: 1.75; color: #5c4a3a; }
+
+  /* 意义卡片 */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; margin-top: 10px; }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 30px 24px;
+    text-align: center;
+    border: 1px solid #ecd9a8;
+    box-shadow: 0 6px 18px rgba(122,18,32,.07);
+    opacity: 0; transform: translateY(26px);
+    transition: opacity .8s ease, transform .8s ease;
+  }
+  .card.visible { opacity: 1; transform: translateY(0); }
+  .card .icon { font-size: 40px; margin-bottom: 14px; display: block; }
+  .card h3 { font-size: 19px; color: var(--red-deep); margin-bottom: 10px; letter-spacing: 2px; }
+  .card p { font-size: 14px; line-height: 1.8; color: #5c4a3a; }
+
+  /* 致敬区 */
+  .salute {
+    background: linear-gradient(160deg, var(--red-deep) 0%, #5c0e18 100%);
+    color: var(--cream);
+    text-align: center;
+    padding: 80px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .salute::before {
+    content: "★"; position: absolute; font-size: 340px; color: rgba(245,215,110,.05);
+    top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none;
+  }
+  .salute h2 {
+    font-family: "STKaiti", "KaiTi", serif;
+    font-size: clamp(26px, 4.5vw, 40px); letter-spacing: 6px; margin-bottom: 24px;
+  }
+  .salute p { font-size: 15px; line-height: 2.1; letter-spacing: 2px; max-width: 720px; margin: 0 auto 34px; color: rgba(255,248,231,.9); }
+  .salute .btn {
+    padding: 15px 46px;
+    border: 1.5px solid var(--gold);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--gold);
+    font-size: 17px; letter-spacing: 5px; cursor: pointer;
+    transition: all .3s ease;
+  }
+  .salute .btn:hover { background: var(--gold); color: var(--red-deep); box-shadow: 0 10px 30px rgba(245,215,110,.4); }
+
+  /* 烟花画布 */
+  #fireworks { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+
+  /* 页脚 */
+  footer { background: #3d0a12; color: rgba(255,248,231,.75); text-align: center; padding: 34px 20px; font-size: 14px; letter-spacing: 3px; line-height: 2; }
+  footer .big { font-size: 16px; color: var(--gold); letter-spacing: 5px; }
+
+  /* 响应式 */
+  @media (max-width: 720px) {
+    .timeline::before { left: 14px; }
+    .tl-item, .tl-item:nth-child(even) { width: 100%; left: 0; padding: 14px 0 14px 44px; }
+    .tl-dot, .tl-item:nth-child(odd) .tl-dot, .tl-item:nth-child(even) .tl-dot { left: 6px; right: auto; }
+    .hero h1 { letter-spacing: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="ribbon"></div>
+
+<canvas id="fireworks"></canvas>
+
+<!-- ============ Hero ============ -->
+<header class="hero">
+  <div class="stars" id="stars"></div>
+  <div class="badge"><span class="dot"></span>铭记历史 · 吾辈自强</div>
+  <h1>日本无条件投降纪念日
+    <span class="date">1945 · 8 · 15</span>
+  </h1>
+  <p class="sub">中国人民抗日战争暨世界反法西斯战争胜利</p>
+  <p class="year">81 周年</p>
+  <button class="cta" onclick="document.getElementById('timeline').scrollIntoView()">回顾历史 ↓</button>
+  <div class="scroll-hint">向下滑动</div>
+</header>
+
+<!-- ============ 时间线 ============ -->
+<section class="wrap" id="timeline">
+  <h2 class="section-title">历史不会忘记</h2>
+  <p class="section-sub">十四年浴血，一寸山河一寸血</p>
+  <div class="timeline">
+    <div class="tl-item">
+      <span class="tl-dot"></span>
+      <div class="tl-card">
+        <div class="tl-year">1931 · 09 · 18</div>
+        <div class="tl-title">九一八事变</div>
+        <div class="tl-desc">日本发动侵华战争，中国人民十四年艰苦卓绝的抗战由此开始。</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <span class="tl-dot"></span>
+      <div class="tl-card">
+        <div class="tl-year">1937 · 07 · 07</div>
+        <div class="tl-title">七七事变 · 全面抗战</div>
+        <div class="tl-desc">卢沟桥的枪声，中华民族到了最危险的时候，全民族抗战就此展开。</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <span class="tl-dot"></span>
+      <div class="tl-card">
+        <div class="tl-year">1945 · 08 · 15</div>
+        <div class="tl-title">日本宣布无条件投降</div>
+        <div class="tl-desc">日本天皇向全日本广播，接受《波茨坦公告》，宣布无条件投降。</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <span class="tl-dot"></span>
+      <div class="tl-card">
+        <div class="tl-year">1945 · 09 · 02</div>
+        <div class="tl-title">签署投降书</div>
+        <div class="tl-desc">日本在"密苏里"号战列舰上正式签署投降书，二战宣告结束。</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <span class="tl-dot"></span>
+      <div class="tl-card">
+        <div class="tl-year">1945 · 09 · 03</div>
+        <div class="tl-title">抗战胜利纪念日</div>
+        <div class="tl-desc">举国欢庆，山河重光。这一天，成为中国人民抗日战争胜利纪念日。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 意义 ============ -->
+<section class="wrap">
+  <h2 class="section-title">这一天，意味着什么</h2>
+  <p class="section-sub">胜利来之不易，和平弥足珍贵</p>
+  <div class="cards">
+    <div class="card">
+      <span class="icon">🕊️</span>
+      <h3>珍爱和平</h3>
+      <p>胜利是用无数先烈的鲜血换来的，和平来之不易，更需后人守护。</p>
+    </div>
+    <div class="card">
+      <span class="icon">🔥</span>
+      <h3>勿忘国耻</h3>
+      <p>历史的伤疤不会自愈，铭记不是为了延续仇恨，而是为了不再重演。</p>
+    </div>
+    <div class="card">
+      <span class="icon">⭐</span>
+      <h3>致敬英雄</h3>
+      <p>每一位为国家、为民族献出生命的人，都不应被遗忘。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 致敬 ============ -->
+<section class="salute">
+  <h2>向英雄致敬</h2>
+  <p>山河已无恙，吾辈当自强。<br>点击下方按钮，为英烈点燃一束烟花，也为你我心中的信念。</p>
+  <button class="btn" onclick="launchFireworks()">点燃烟花 ✨</button>
+</section>
+
+<footer>
+  <div class="big">铭记历史 · 缅怀先烈 · 珍爱和平 · 开创未来</div>
+  <div>2026 年 8 月 15 日 · 抗战胜利 81 周年</div>
+</footer>
+
+<script>
+/* ===== 五星飘落 ===== */
+(function () {
+  var box = document.getElementById('stars');
+  var chars = ['★', '☆', '✧'];
+  for (var i = 0; i < 26; i++) {
+    var s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = chars[i % chars.length];
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.fontSize = (10 + Math.random() * 18) + 'px';
+    s.style.animationDuration = (7 + Math.random() * 10) + 's';
+    s.style.animationDelay = (-Math.random() * 16) + 's';
+    box.appendChild(s);
+  }
+})();
+
+/* ===== 滚动渐入 ===== */
+var io = new IntersectionObserver(function (entries) {
+  entries.forEach(function (e) {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.18 });
+document.querySelectorAll('.tl-item, .card').forEach(function (el) { io.observe(el); });
+
+/* ===== 烟花 ===== */
+var cv = document.getElementById('fireworks');
+var ctx = cv.getContext('2d');
+var parts = [];
+function sizeCanvas() { cv.width = innerWidth; cv.height = innerHeight; }
+sizeCanvas();
+addEventListener('resize', sizeCanvas);
+
+function burst(x, y, color) {
+  var n = 90;
+  for (var i = 0; i < n; i++) {
+    var a = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+    var sp = 2 + Math.random() * 5;
+    parts.push({
+      x: x, y: y,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      life: 1,
+      decay: 0.008 + Math.random() * 0.012,
+      color: color,
+      size: 1.5 + Math.random() * 2.2
+    });
+  }
+}
+function launchFireworks() {
+  var colors = ['#f5d76e', '#e0384e', '#ff8c42', '#fff3c4', '#ffd9e8'];
+  var times = [0, 350, 700, 1100, 1500];
+  times.forEach(function (t, idx) {
+    setTimeout(function () {
+      burst(
+        cv.width * (0.25 + Math.random() * 0.5),
+        cv.height * (0.2 + Math.random() * 0.35),
+        colors[idx % colors.length]
+      );
+    }, t);
+  });
+}
+(function animate() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  parts = parts.filter(function (p) { return p.life > 0; });
+  parts.forEach(function (p) {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.045;
+    p.vx *= 0.985;
+    p.life -= p.decay;
+    ctx.globalAlpha = Math.max(p.life, 0);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
