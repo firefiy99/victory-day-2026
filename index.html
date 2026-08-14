@@ -835,8 +835,8 @@ function launchFireworks() {
   var beatIdx = 0;
   var playing = false;
 
-  // D 宫五声音阶（D E F# A B），庄重舒缓，66 BPM
-  var BEAT = 60 / 66; // 每拍秒数
+  // D 宫五声音阶（D E F# A B），庄重舒缓，54 BPM
+  var BEAT = 60 / 54; // 每拍秒数
   var LOOP = 32;      // 8 小节 × 4 拍
 
   // 旋律（钟琴）：[频率, 持续拍数, 音量]
@@ -934,33 +934,42 @@ function launchFireworks() {
     }
   }
 
+  function updateUI(on) {
+    btn.classList.toggle('playing', on);
+    btn.textContent = on ? '🎶' : '🎵';
+    btn.title = on ? '暂停背景音乐' : '播放背景音乐';
+  }
+
   function start() {
-    if (!ctx) {
-      ctx = new AC();
+    if (timer) return;
+    if (!ctx) { ctx = new AC(); beatIdx = 0; }
+    var p = (ctx.state === 'suspended') ? ctx.resume() : Promise.resolve();
+    p.then(function () {
+      playing = true;
       nextBeat = ctx.currentTime + 0.15;
-      beatIdx = 0;
-    }
-    if (ctx.state === 'suspended') ctx.resume();
-    playing = true;
-    schedule();
-    timer = setInterval(schedule, 120);
-    btn.classList.add('playing');
-    btn.textContent = '🎶';
-    btn.title = '暂停背景音乐';
+      schedule();
+      timer = setInterval(schedule, 120);
+      updateUI(true);
+    }).catch(function () { /* 自动播放被浏览器阻止，等待首次交互 */ });
   }
 
   function stop() {
     playing = false;
     if (timer) { clearInterval(timer); timer = null; }
     if (ctx && ctx.state === 'running') ctx.suspend();
-    btn.classList.remove('playing');
-    btn.textContent = '🎵';
-    btn.title = '播放背景音乐';
+    updateUI(false);
   }
 
   btn.addEventListener('click', function () {
     if (playing) { stop(); } else { start(); }
   });
+
+  // 进入页面自动播放；若被浏览器自动播放策略阻止，首次点击/触摸页面任意处即开始
+  start();
+  var unlock = function () { if (!playing) start(); };
+  document.addEventListener('pointerdown', unlock);
+  document.addEventListener('touchstart', unlock);
+  document.addEventListener('keydown', unlock);
 })();
 </script>
 </body>
