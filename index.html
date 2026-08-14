@@ -239,6 +239,22 @@
   /* 烟花画布 */
   #fireworks { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
 
+  /* 足迹区 */
+  .fp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 18px; margin-bottom: 36px; }
+  .fp-stat { background: #fff; border: 1px solid #ecd9a8; border-radius: 12px; padding: 22px 12px; text-align: center; }
+  .fp-num { font-size: 26px; font-weight: 700; color: var(--red); }
+  .fp-num small { font-size: 15px; font-weight: 400; color: #8a6d3b; }
+  .fp-label { font-size: 13px; color: #8a6d3b; letter-spacing: 2px; margin-top: 6px; }
+  .fp-local { background: #fff; border: 1px solid #ecd9a8; border-radius: 12px; padding: 22px 24px; }
+  .fp-local h3 { font-size: 16px; color: var(--red-deep); margin-bottom: 14px; letter-spacing: 2px; }
+  #fp-list { list-style: none; }
+  #fp-list li { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 0; border-bottom: 1px dashed #ecd9a8; font-size: 14px; }
+  #fp-list li:last-child { border-bottom: none; }
+  .fp-time { color: #8a6d3b; font-size: 13px; }
+  .fp-place { font-weight: 600; color: var(--ink); }
+  .fp-ip { color: #b08968; font-family: monospace; font-size: 13px; }
+  .fp-empty { color: #b08968; font-size: 14px; padding: 8px 0; }
+
   /* 页脚 */
   footer { background: #3d0a12; color: rgba(255,248,231,.75); text-align: center; padding: 34px 20px; font-size: 14px; letter-spacing: 3px; line-height: 2; }
   footer .big { font-size: 16px; color: var(--gold); letter-spacing: 5px; }
@@ -348,10 +364,36 @@
   <button class="btn" onclick="launchFireworks()">点燃烟花 ✨</button>
 </section>
 
+<!-- ============ 足迹 ============ -->
+<section class="wrap" id="footprint">
+  <h2 class="section-title">足迹</h2>
+  <p class="section-sub">每一份关注，都是对历史的致敬</p>
+  <div class="fp-stats">
+    <div class="fp-stat">
+      <div class="fp-num"><span id="busuanzi_value_site_pv">0</span><small> 次</small></div>
+      <div class="fp-label">累计访问</div>
+    </div>
+    <div class="fp-stat">
+      <div class="fp-num"><span id="busuanzi_value_site_uv">0</span><small> 人</small></div>
+      <div class="fp-label">访客人数</div>
+    </div>
+    <div class="fp-stat">
+      <div class="fp-num" id="visitor-here">获取中…</div>
+      <div class="fp-label">当前访客</div>
+    </div>
+  </div>
+  <div class="fp-local">
+    <h3>最近足迹（本设备）</h3>
+    <ul id="fp-list"></ul>
+  </div>
+</section>
+
 <footer>
   <div class="big">铭记历史 · 缅怀先烈 · 珍爱和平 · 开创未来</div>
   <div>2026 年 8 月 15 日 · 抗战胜利 81 周年</div>
 </footer>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 <script>
 /* ===== 五星飘落 ===== */
@@ -430,6 +472,58 @@ function launchFireworks() {
   });
   ctx.globalAlpha = 1;
   requestAnimationFrame(animate);
+})();
+
+/* ===== 足迹：实时访客 + 本地记录 ===== */
+(function () {
+  var LIST_KEY = 'victory_footprints';
+  var hereEl = document.getElementById('visitor-here');
+  var API_LIST = ['https://ipinfo.io/json', 'https://ipapi.co/json/'];
+  var cached = [];
+  try { cached = JSON.parse(localStorage.getItem(LIST_KEY) || '[]'); } catch (e) { cached = []; }
+
+  function render(list) {
+    var ul = document.getElementById('fp-list');
+    if (!ul) return;
+    if (!list.length) {
+      ul.innerHTML = '<li class="fp-empty">还没有足迹，打开过页面的人会出现在这里</li>';
+      return;
+    }
+    ul.innerHTML = list.map(function (f) {
+      return '<li><span class="fp-time">' + (f.time || '') + '</span>' +
+        '<span class="fp-place">' + (f.place || '未知地区') + '</span>' +
+        (f.ip ? '<span class="fp-ip">' + f.ip + '</span>' : '') + '</li>';
+    }).join('');
+  }
+
+  function save(fp) {
+    var arr = [];
+    try { arr = JSON.parse(localStorage.getItem(LIST_KEY) || '[]'); } catch (e) {}
+    arr.unshift(fp);
+    arr = arr.slice(0, 30);
+    try { localStorage.setItem(LIST_KEY, JSON.stringify(arr)); } catch (e) {}
+    render(arr);
+  }
+
+  function askApi(i) {
+    if (i >= API_LIST.length) { hereEl.textContent = '未知'; return; }
+    fetch(API_LIST[i])
+      .then(function (r) { if (!r.ok) throw new Error('bad'); return r.json(); })
+      .then(function (d) {
+        var city = d.city || '';
+        var region = d.region || '';
+        var country = d.country_name || d.country || '';
+        var ip = d.ip || '';
+        var place = [country, region, city].filter(Boolean).join('·');
+        if (!place && !ip) throw new Error('empty');
+        hereEl.textContent = place ? place + (ip ? '（' + ip + '）' : '') : ip;
+        save({ time: new Date().toLocaleString('zh-CN'), place: place, ip: ip });
+      })
+      .catch(function () { askApi(i + 1); });
+  }
+
+  render(cached);
+  askApi(0);
 })();
 </script>
 </body>
