@@ -478,7 +478,11 @@ function launchFireworks() {
 (function () {
   var LIST_KEY = 'victory_footprints';
   var hereEl = document.getElementById('visitor-here');
-  var API_LIST = ['https://ipinfo.io/json', 'https://ipapi.co/json/'];
+  var API_LIST = [
+    'https://geolocation-db.com/json/',
+    'https://ipwho.is/',
+    'https://ipinfo.io/json'
+  ];
   var cached = [];
   try { cached = JSON.parse(localStorage.getItem(LIST_KEY) || '[]'); } catch (e) { cached = []; }
 
@@ -511,9 +515,9 @@ function launchFireworks() {
       .then(function (r) { if (!r.ok) throw new Error('bad'); return r.json(); })
       .then(function (d) {
         var city = d.city || '';
-        var region = d.region || '';
+        var region = d.region || d.state || '';
         var country = d.country_name || d.country || '';
-        var ip = d.ip || '';
+        var ip = d.ip || d.IPv4 || '';
         var place = [country, region, city].filter(Boolean).join('·');
         if (!place && !ip) throw new Error('empty');
         hereEl.textContent = place ? place + (ip ? '（' + ip + '）' : '') : ip;
